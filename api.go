@@ -9,8 +9,8 @@ import (
 )
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
-	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(v)
 }
 
@@ -45,7 +45,7 @@ func (s *APIServer) Run() {
 
 	router.Post("/account", makeHTTPHandleFunc(s.handleCreateAccount))
 
-	log.Println("JSON API SERVER RUNNING ON PORT", s.listenAddr)
+	log.Println("JSON API SERVER RUNNING ON PORT:", s.listenAddr)
 
 	http.ListenAndServe(s.listenAddr, router)
 }
@@ -56,5 +56,5 @@ func (s *APIServer) handleGetUserByID(w http.ResponseWriter, r *http.Request) er
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
 
-	return nil
+	return WriteJSON(w, http.StatusOK, "Online")
 }
