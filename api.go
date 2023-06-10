@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -43,10 +44,10 @@ func (s *APIServer) Run() {
 	router := chi.NewRouter()
 
 	router.Post("/account", makeHTTPHandleFunc(s.handleCreateAccount))
-}
 
-func (S *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	log.Println("JSON API SERVER RUNNING ON PORT", s.listenAddr)
+
+	http.ListenAndServe(s.listenAddr, router)
 }
 
 func (s *APIServer) handleGetUserByID(w http.ResponseWriter, r *http.Request) error {
@@ -54,5 +55,6 @@ func (s *APIServer) handleGetUserByID(w http.ResponseWriter, r *http.Request) er
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
+
 	return nil
 }
