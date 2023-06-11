@@ -8,24 +8,13 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func WriteJSON(w http.ResponseWriter, status int, v any) error {
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
-}
-
-type apiFunc func(http.ResponseWriter, *http.Request) error
-
 type ApiError struct {
-	Error string
+	err    string
+	Status int
 }
 
-func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := f(w, r); err != nil {
-			WriteJSON(w, http.StatusBadRequest, ApiError{Error: err.Error()})
-		}
-	}
+func (e ApiError) Error() string {
+	return e.err
 }
 
 type APIServer struct {
@@ -33,8 +22,27 @@ type APIServer struct {
 	listenAddr string
 }
 
-func NewServer(listenAddr string, store Storage) *APIServer {
+type apiFunc func(http.ResponseWriter, *http.Request) error
 
+func WriteJSON(w http.ResponseWriter, status int, v any) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(v)
+}
+
+func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := f(w, r); err != nil {
+			if e, ok := err.(ApiError); ok {
+				WriteJSON(w, e.Status, e)
+				return
+			}
+			WriteJSON(w, http.StatusBadRequest, ApiError{err: err.Error()})
+		}
+	}
+}
+
+func NewServer(listenAddr string, store Storage) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
 		store:      store,
@@ -57,6 +65,5 @@ func (s *APIServer) handleGetUserByID(w http.ResponseWriter, r *http.Request) er
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
-
 	return WriteJSON(w, http.StatusOK, "Online")
 }
