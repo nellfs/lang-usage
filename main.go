@@ -124,7 +124,7 @@ func main() {
 	ordered := orderByValue(percentages)
 
 	for _, kv := range ordered {
-		fmt.Printf("Language: %s, %.1f%%\n", kv.Language, kv.Percentage)
+		fmt.Printf("%s: %.1f%%\n", kv.Language, kv.Percentage)
 	}
 
 	// store, err := NewPostgresStore()
