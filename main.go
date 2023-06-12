@@ -101,6 +101,7 @@ func main() {
 		}
 
 		for lang, count := range languages {
+			fmt.Println(languagesURL, lang, count)
 			if val, ok := langMap[lang]; ok {
 				langMap[lang] = val + count
 			} else {
@@ -124,7 +125,7 @@ func main() {
 	ordered := orderByValue(percentages)
 
 	for _, kv := range ordered {
-		fmt.Printf("%s: %.1f%%\n", kv.Language, kv.Percentage)
+		fmt.Printf("%s: %.2f%%\n", kv.Language, kv.Percentage)
 	}
 
 	// store, err := NewPostgresStore()
