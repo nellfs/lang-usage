@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sort"
 )
 
 type Total struct {
@@ -18,6 +19,121 @@ type Repository struct {
 
 type Languages struct {
 	Lang any
+}
+
+type LanguagePercentage struct {
+	Language   string
+	Percentage float64
+}
+
+func main() {
+
+	// jsonRepos := `[
+	// 	{
+	// 	"name": "hello",
+	// 	"languages_url": {
+	// 		"Go": 10,
+	// 		"Javascript": 20,
+	// 		"Python": 4
+	// 		}
+	// 	},
+	// 	{
+	// 	"name": "world",
+	// 	"languages_url": {
+	// 		"Go": 15,
+	// 		"Typescript": 10,
+	// 		"Javascript": 3
+	// 		}
+	// 	}
+	// 	]
+	// 	`
+
+	// var repositoriesJson []Repository
+
+	// final := make(map[string]int)
+
+	// if err := json.Unmarshal([]byte(jsonRepos), &repositoriesJson); err != nil {
+	// 	fmt.Println("Erro ao decodificar o JSON:", err)
+	// 	return
+	// }
+
+	// for _, repo := range repositoriesJson {
+	// 	for lang, count := range repo.Languages {
+	// 		if val, ok := final[lang]; ok {
+	// 			final[lang] = val + count
+	// 		} else {
+	// 			final[lang] = count
+	// 		}
+	// 	}
+	// }
+
+	// for lang, count := range final {
+	// 	fmt.Println(lang, count)
+	// }
+
+	body, err := getURL("https://api.github.com/users/nellfs/repos")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var repositories []Repository
+
+	err = json.Unmarshal(body, &repositories)
+	if err != nil {
+		fmt.Println("Error decoding response:", err)
+		return
+	}
+
+	langMap := make(map[string]int)
+
+	for _, repo := range repositories {
+
+		languagesURL := repo.Languages
+		languagesBody, err := getURL(languagesURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var languages map[string]int
+		err = json.Unmarshal(languagesBody, &languages)
+		if err != nil {
+			log.Fatal("Error decoding languages:", err)
+		}
+
+		for lang, count := range languages {
+			if val, ok := langMap[lang]; ok {
+				langMap[lang] = val + count
+			} else {
+				langMap[lang] = count
+			}
+		}
+
+	}
+
+	total := 0
+	for _, count := range langMap {
+		total += count
+	}
+
+	percentages := make(map[string]float64)
+	for key, value := range langMap {
+		percentage := float64(value) / float64(total) * 100
+		percentages[key] = percentage
+	}
+
+	ordered := orderByValue(percentages)
+
+	for _, kv := range ordered {
+		fmt.Printf("Language: %s, %.1f%%\n", kv.Language, kv.Percentage)
+	}
+
+	// store, err := NewPostgresStore()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("%+v\n", store)
+	// server := NewServer(":3000", store)
+	// server.Run()
 }
 
 func getURL(url string) ([]byte, error) {
@@ -49,47 +165,17 @@ func readJSON(data []byte, v interface{}) error {
 	return nil
 }
 
-func main() {
-
-	body, err := getURL("https://api.github.com/users/nellfs/repos")
-	if err != nil {
-		log.Fatal(err)
+func orderByValue(m map[string]float64) []LanguagePercentage {
+	// Create a slice of key-value pairs
+	var keyValuePairs []LanguagePercentage
+	for key, value := range m {
+		keyValuePairs = append(keyValuePairs, LanguagePercentage{key, value})
 	}
 
-	var repositories []Repository
+	// Sort the slice by value (ascending order)
+	sort.Slice(keyValuePairs, func(i, j int) bool {
+		return keyValuePairs[i].Percentage < keyValuePairs[j].Percentage
+	})
 
-	err = json.Unmarshal(body, &repositories)
-	if err != nil {
-		fmt.Println("Error decoding response:", err)
-		return
-	}
-
-	for _, repo := range repositories {
-		fmt.Println(repo.Name)
-
-		languagesURL := repo.Languages
-		languagesBody, err := getURL(languagesURL)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var languages map[string]interface{}
-		err = json.Unmarshal(languagesBody, &languages)
-		if err != nil {
-			log.Fatal("Error decoding languages:", err)
-		}
-
-		for lang, count := range languages {
-			fmt.Printf("Language: %s, Count: %.f\n", lang, count)
-		}
-
-	}
-
-	// store, err := NewPostgresStore()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("%+v\n", store)
-	// server := NewServer(":3000", store)
-	// server.Run()
+	return keyValuePairs
 }
