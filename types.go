@@ -11,7 +11,7 @@ type CodeReport struct {
 	ID          int
 	Request     int
 	Language_id int
-	score       int
-	created_at  time.Time
-	percentage  float64
+	Score       int
+	Percentage  float64
+	Created_At  time.Time
 }

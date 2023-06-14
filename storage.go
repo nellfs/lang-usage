@@ -19,10 +19,10 @@ type PostgresStore struct {
 }
 
 func (s *PostgresStore) Init() error {
-	return s.CreateLanguageTable()
+	return s.CreateTables()
 }
 
-func (s *PostgresStore) CreateLanguageTable() error {
+func (s *PostgresStore) CreateTables() error {
 	query := `
 	CREATE TABLE IF NOT EXISTS languages (
 		id SERIAL PRIMARY KEY,
@@ -34,8 +34,8 @@ func (s *PostgresStore) CreateLanguageTable() error {
 		request INTEGER,
 		language_id INTEGER REFERENCES languages(id),
 		score INTEGER,
-		created_at TIMESTAMPTZ DEFAULT NOW(),
 		percentage NUMERIC(5, 5)
+		created_at TIMESTAMPTZ DEFAULT NOW(),
 	);
 `
 	_, err := s.db.Exec(query)
@@ -70,4 +70,13 @@ func NewPostgresStore() (*PostgresStore, error) {
 	}, nil
 }
 
-// func (s *PostgresStore) CreateCodeReport
+func (s *PostgresStore) CreateCodeReport(cr *CodeReport) error {
+	query := `
+	INSERT INTO code_report (id, request, language_id, score, percentage, created_at)
+	VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := s.db.Exec(query, cr.ID, cr.Request, cr.Language_id, cr.Score, cr.Percentage, cr.Created_At)
+	if err != nil {
+		return err
+	}
+	return nil
+}
