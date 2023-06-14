@@ -18,6 +18,30 @@ type PostgresStore struct {
 	db *sql.DB
 }
 
+func (s *PostgresStore) Init() error {
+	return s.CreateLanguageTable()
+}
+
+func (s *PostgresStore) CreateLanguageTable() error {
+	query := `
+	CREATE TABLE IF NOT EXISTS languages (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(50) UNIQUE
+	  );
+
+	CREATE TABLE IF NOT EXISTS code_report (
+		id SERIAL PRIMARY KEY,
+		request INTEGER,
+		language_id INTEGER REFERENCES languages(id),
+		score INTEGER,
+		created_at TIMESTAMPTZ DEFAULT NOW(),
+		percentage NUMERIC(5, 5)
+	);
+`
+	_, err := s.db.Exec(query)
+	return err
+}
+
 func NewPostgresStore() (*PostgresStore, error) {
 
 	err := godotenv.Load()
@@ -45,3 +69,5 @@ func NewPostgresStore() (*PostgresStore, error) {
 		db: db,
 	}, nil
 }
+
+// func (s *PostgresStore) CreateCodeReport
