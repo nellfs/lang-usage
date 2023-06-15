@@ -8,7 +8,6 @@ type Language struct {
 }
 
 type CodeReport struct {
-	ID          int
 	Request     int
 	Language_id int
 	Score       int

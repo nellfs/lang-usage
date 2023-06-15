@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -28,6 +29,22 @@ type LanguagePercentage struct {
 }
 
 func main() {
+
+	store, err := NewPostgresStore()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := store.Init(); err != nil {
+		log.Fatal(err)
+	}
+
+	lastRequest, err := store.getLastRequest()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	newRequestID := lastRequest + 1
 
 	// jsonRepos := `[
 	// 	{
@@ -74,56 +91,64 @@ func main() {
 
 	//real code
 
-	// body, err := getURL("https://api.github.com/users/nellfs/repos")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	body, err := getURL("https://api.github.com/users/nellfs/repos")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// var repositories []Repository
+	var repositories []Repository
 
-	// err = json.Unmarshal(body, &repositories)
-	// if err != nil {
-	// 	fmt.Println("Error decoding response:", err)
-	// 	return
-	// }
+	err = json.Unmarshal(body, &repositories)
+	if err != nil {
+		fmt.Println("Error decoding response:", err)
+		return
+	}
 
-	// langMap := make(map[string]int)
+	langMap := make(map[string]int)
 
-	// for _, repo := range repositories {
+	for _, repo := range repositories {
 
-	// 	languagesURL := repo.Languages
-	// 	languagesBody, err := getURL(languagesURL)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
+		languagesURL := repo.Languages
+		languagesBody, err := getURL(languagesURL)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	// 	var languages map[string]int
-	// 	err = json.Unmarshal(languagesBody, &languages)
-	// 	if err != nil {
-	// 		log.Fatal("Error decoding languages:", err)
-	// 	}
+		var languages map[string]int
+		err = json.Unmarshal(languagesBody, &languages)
+		if err != nil {
+			log.Fatal("Error decoding languages:", err)
+		}
 
-	// 	for lang, count := range languages {
-	// 		fmt.Println(languagesURL, lang, count)
-	// 		if val, ok := langMap[lang]; ok {
-	// 			langMap[lang] = val + count
-	// 		} else {
-	// 			langMap[lang] = count
-	// 		}
-	// 	}
+		for lang, score := range languages {
+			if val, ok := langMap[lang]; ok {
+				langMap[lang] = val + score
+			} else {
+				langMap[lang] = score
+			}
+		}
 
-	// }
+	}
 
-	// total := 0
-	// for _, count := range langMap {
-	// 	total += count
-	// }
+	total := 0
+	for _, score := range langMap {
+		total += score
+	}
 
-	// percentages := make(map[string]float64)
-	// for key, value := range langMap {
-	// 	percentage := float64(value) / float64(total) * 100
-	// 	percentages[key] = percentage
-	// }
+	for _, value := range langMap {
+		percentage := float64(value) / float64(total) * 100
+		roundedPercentage := fmt.Sprintf("%.2f", percentage)
+
+		roundedFinal, err := strconv.ParseFloat(roundedPercentage, 64)
+		if err != nil {
+		}
+
+		err = store.CreateCodeReport(&CodeReport{newRequestID, 0, value, roundedFinal, time.Now()})
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	// ordered := orderByValue(percentages)
 
@@ -131,20 +156,11 @@ func main() {
 	// 	fmt.Printf("%s: %.2f%%\n", kv.Language, kv.Percentage)
 	// }
 
-	store, err := NewPostgresStore()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err = store.CreateCodeReport(&CodeReport{0, 0, 0, 0.0, time.Now()})
 
-	if err := store.Init(); err != nil {
-		log.Fatal(err)
-	}
-
-	err = store.CreateCodeReport(&CodeReport{0, 0, 0, 0, 0.0, time.Now()})
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 }
 
 func getURL(url string) ([]byte, error) {

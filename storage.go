@@ -34,7 +34,7 @@ func (s *PostgresStore) CreateTables() error {
 		request INTEGER,
 		language_id INTEGER REFERENCES languages(id),
 		score INTEGER,
-		percentage NUMERIC(5, 5),
+		percentage NUMERIC(5, 2),
 		created_at TIMESTAMPTZ DEFAULT NOW()
 	);
 
@@ -73,11 +73,22 @@ func NewPostgresStore() (*PostgresStore, error) {
 
 func (s *PostgresStore) CreateCodeReport(cr *CodeReport) error {
 	query := `
-	INSERT INTO code_report (id, request, language_id, score, percentage, created_at)
-	VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := s.db.Exec(query, cr.ID, cr.Request, cr.Language_id, cr.Score, cr.Percentage, cr.Created_At)
+	INSERT INTO code_report (request, language_id, score, percentage, created_at)
+	VALUES ($1, $2, $3, $4, $5)`
+	_, err := s.db.Exec(query, cr.Request, cr.Language_id, cr.Score, cr.Percentage, cr.Created_At)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return nil
+}
+
+func (s *PostgresStore) getLastRequest() (int, error) {
+	var lastGroupID int
+	err := s.db.QueryRow("SELECT MAX(request) FROM code_report").Scan(&lastGroupID)
+	if err != nil {
+		lastGroupID = -1
+	} else {
+		return 0, err
+	}
+	return lastGroupID, nil
 }
