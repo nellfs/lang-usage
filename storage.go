@@ -29,14 +29,15 @@ func (s *PostgresStore) CreateTables() error {
 		name VARCHAR(50) UNIQUE
 	  );
 
-	CREATE TABLE IF NOT EXISTS code_report (
+	  CREATE TABLE IF NOT EXISTS code_report (
 		id SERIAL PRIMARY KEY,
 		request INTEGER,
 		language_id INTEGER REFERENCES languages(id),
 		score INTEGER,
-		percentage NUMERIC(5, 5)
-		created_at TIMESTAMPTZ DEFAULT NOW(),
+		percentage NUMERIC(5, 5),
+		created_at TIMESTAMPTZ DEFAULT NOW()
 	);
+
 `
 	_, err := s.db.Exec(query)
 	return err
@@ -76,7 +77,7 @@ func (s *PostgresStore) CreateCodeReport(cr *CodeReport) error {
 	VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err := s.db.Exec(query, cr.ID, cr.Request, cr.Language_id, cr.Score, cr.Percentage, cr.Created_At)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	return nil
 }

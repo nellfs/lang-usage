@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"time"
 )
 
 type Total struct {
@@ -136,6 +137,12 @@ func main() {
 	}
 
 	if err := store.Init(); err != nil {
+		log.Fatal(err)
+	}
+
+	err = store.CreateCodeReport(&CodeReport{0, 0, 0, 0, 0.0, time.Now()})
+
+	if err != nil {
 		log.Fatal(err)
 	}
 }
