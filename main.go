@@ -107,7 +107,6 @@ func main() {
 	langMap := make(map[string]int)
 
 	for _, repo := range repositories {
-
 		languagesURL := repo.Languages
 		languagesBody, err := getURL(languagesURL)
 		if err != nil {
@@ -121,6 +120,15 @@ func main() {
 		}
 
 		for lang, score := range languages {
+			//logic to register a new language
+			languageId, err := store.getLanguageId(lang)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if languageId == 0 {
+				store.CreateLanguage(&Language{lang})
+			}
+
 			if val, ok := langMap[lang]; ok {
 				langMap[lang] = val + score
 			} else {
@@ -135,26 +143,31 @@ func main() {
 		total += score
 	}
 
-	for _, value := range langMap {
+	percentages := make(map[string]float64)
+	for name, value := range langMap {
 		percentage := float64(value) / float64(total) * 100
 		roundedPercentage := fmt.Sprintf("%.2f", percentage)
-
 		roundedFinal, err := strconv.ParseFloat(roundedPercentage, 64)
 		if err != nil {
+			fmt.Println(err)
+		}
+		percentages[name] = roundedFinal
+	}
+
+	ordered := orderByValue(percentages)
+
+	for _, kv := range ordered {
+		languageId, err := store.getLanguageId(kv.Language)
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		err = store.CreateCodeReport(&CodeReport{newRequestID, 0, value, roundedFinal, time.Now()})
+		err = store.CreateCodeReport(&CodeReport{newRequestID, languageId, langMap[kv.Language], kv.Percentage, time.Now()})
 
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-
-	// ordered := orderByValue(percentages)
-
-	// for _, kv := range ordered {
-	// 	fmt.Printf("%s: %.2f%%\n", kv.Language, kv.Percentage)
-	// }
 
 	// err = store.CreateCodeReport(&CodeReport{0, 0, 0, 0.0, time.Now()})
 

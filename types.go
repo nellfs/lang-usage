@@ -3,7 +3,6 @@ package main
 import "time"
 
 type Language struct {
-	ID   int
 	Name string
 }
 

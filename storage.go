@@ -24,7 +24,7 @@ func (s *PostgresStore) Init() error {
 
 func (s *PostgresStore) CreateTables() error {
 	query := `
-	CREATE TABLE IF NOT EXISTS languages (
+	CREATE TABLE IF NOT EXISTS language (
 		id SERIAL PRIMARY KEY,
 		name VARCHAR(50) UNIQUE
 	  );
@@ -32,7 +32,7 @@ func (s *PostgresStore) CreateTables() error {
 	  CREATE TABLE IF NOT EXISTS code_report (
 		id SERIAL PRIMARY KEY,
 		request INTEGER,
-		language_id INTEGER REFERENCES languages(id),
+		language_id INTEGER REFERENCES language(id),
 		score INTEGER,
 		percentage NUMERIC(5, 2),
 		created_at TIMESTAMPTZ DEFAULT NOW()
@@ -77,9 +77,34 @@ func (s *PostgresStore) CreateCodeReport(cr *CodeReport) error {
 	VALUES ($1, $2, $3, $4, $5)`
 	_, err := s.db.Exec(query, cr.Request, cr.Language_id, cr.Score, cr.Percentage, cr.Created_At)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	return nil
+}
+
+func (s *PostgresStore) CreateLanguage(l *Language) error {
+	query := `
+	INSERT INTO language (name)
+	VALUES ($1)`
+	_, err := s.db.Exec(query, l.Name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *PostgresStore) getLanguageId(name string) (int, error) {
+	var id int
+
+	err := s.db.QueryRow("SELECT id FROM language WHERE name = $1", name).Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	return id, nil
 }
 
 func (s *PostgresStore) getLastRequest() (int, error) {
