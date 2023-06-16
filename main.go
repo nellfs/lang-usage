@@ -213,7 +213,7 @@ func orderByValue(m map[string]float64) []LanguagePercentage {
 	}
 
 	sort.Slice(keyValuePairs, func(i, j int) bool {
-		return keyValuePairs[i].Percentage > keyValuePairs[j].Percentage
+		return keyValuePairs[i].Percentage < keyValuePairs[j].Percentage
 	})
 
 	return keyValuePairs
