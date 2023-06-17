@@ -121,13 +121,6 @@ func main() {
 
 		for lang, score := range languages {
 			//logic to register a new language
-			languageId, err := store.getLanguageId(lang)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if languageId == 0 {
-				store.CreateLanguage(&Language{lang})
-			}
 
 			if val, ok := langMap[lang]; ok {
 				langMap[lang] = val + score
@@ -162,12 +155,20 @@ func main() {
 			log.Fatal(err)
 		}
 
+		if languageId == 0 {
+			store.CreateLanguage(&Language{kv.Language, kv.Percentage})
+		}
+
+		store.updateLanguageUsage(kv.Language, kv.Percentage)
+
 		err = store.CreateCodeReport(&CodeReport{newRequestID, languageId, langMap[kv.Language], kv.Percentage, time.Now()})
 
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
+
+	store.db.Close()
 
 	// err = store.CreateCodeReport(&CodeReport{0, 0, 0, 0.0, time.Now()})
 

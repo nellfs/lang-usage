@@ -26,7 +26,8 @@ func (s *PostgresStore) CreateTables() error {
 	query := `
 	CREATE TABLE IF NOT EXISTS language (
 		id SERIAL PRIMARY KEY,
-		name VARCHAR(50) UNIQUE
+		name VARCHAR(50) UNIQUE,
+		usage NUMERIC(5, 2)
 	  );
 
 	  CREATE TABLE IF NOT EXISTS code_report (
@@ -34,7 +35,7 @@ func (s *PostgresStore) CreateTables() error {
 		request INTEGER,
 		language_id INTEGER REFERENCES language(id),
 		score INTEGER,
-		percentage NUMERIC(5, 2),
+		usage NUMERIC(5, 2),
 		created_at TIMESTAMPTZ DEFAULT NOW()
 	);
 
@@ -73,9 +74,9 @@ func NewPostgresStore() (*PostgresStore, error) {
 
 func (s *PostgresStore) CreateCodeReport(cr *CodeReport) error {
 	query := `
-	INSERT INTO code_report (request, language_id, score, percentage, created_at)
+	INSERT INTO code_report (request, language_id, score, usage, created_at)
 	VALUES ($1, $2, $3, $4, $5)`
-	_, err := s.db.Exec(query, cr.Request, cr.Language_id, cr.Score, cr.Percentage, cr.Created_At)
+	_, err := s.db.Exec(query, cr.Request, cr.Language_ID, cr.Score, cr.Use_Percentage, cr.Created_At)
 	if err != nil {
 		return err
 	}
@@ -105,6 +106,38 @@ func (s *PostgresStore) getLanguageId(name string) (int, error) {
 	}
 
 	return id, nil
+}
+
+func (s *PostgresStore) updateLanguageUsage(name string, newUsage float64) error {
+	// Begin the transaction
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Prepare the update statement
+	stmt, err := tx.Prepare("UPDATE language SET usage = $1 WHERE name = $2")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
+	// Execute the update statement
+	_, err = stmt.Exec(newUsage, name)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
 }
 
 func (s *PostgresStore) getLastRequest() (int, error) {
