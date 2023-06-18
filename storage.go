@@ -108,7 +108,7 @@ func (s *PostgresStore) getLanguageId(name string) (int, error) {
 	return id, nil
 }
 
-func (s *PostgresStore) updateLanguageUsage(name string, newUsage float64) error {
+func (s *PostgresStore) UpdateLanguageUsage(l *Language) error {
 	// Begin the transaction
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *PostgresStore) updateLanguageUsage(name string, newUsage float64) error
 	defer stmt.Close()
 
 	// Execute the update statement
-	_, err = stmt.Exec(newUsage, name)
+	_, err = stmt.Exec(l.Name, l.Usage)
 	if err != nil {
 		tx.Rollback()
 		return err

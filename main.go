@@ -7,16 +7,16 @@ import (
 	"log"
 	"net/http"
 	"sort"
-	"strconv"
-	"time"
+	// "strconv"
+	// "time"
 )
 
 type Total struct {
 }
 
 type Repository struct {
-	Name      string `json:"name"`
-	Languages string `json:"languages_url"`
+	Name      string         `json:"name"`
+	Languages map[string]int `json:"languages_url"`
 }
 
 type Languages struct {
@@ -29,12 +29,10 @@ type LanguagePercentage struct {
 }
 
 func main() {
-
 	store, err := NewPostgresStore()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	if err := store.Init(); err != nil {
 		log.Fatal(err)
 	}
@@ -46,136 +44,207 @@ func main() {
 
 	newRequestID := lastRequest + 1
 
-	// jsonRepos := `[
-	// 	{
-	// 	"name": "hello",
-	// 	"languages_url": {
-	// 		"Go": 10,
-	// 		"Javascript": 20,
-	// 		"Python": 4
-	// 		}
-	// 	},
-	// 	{
-	// 	"name": "world",
-	// 	"languages_url": {
-	// 		"Go": 15,
-	// 		"Typescript": 10,
-	// 		"Javascript": 3
-	// 		}
-	// 	}
-	// 	]
-	// 	`
+	jsonRepos := `[
+		{
+		"name": "hello",
+		"languages_url": {
+			"Go": 10,
+			"Javascript": 20,
+			"Python": 4
+			}
+		},
+		{
+		"name": "world",
+		"languages_url": {
+			"Go": 15,
+			"Typescript": 10,
+			"Javascript": 3
+			}
+		}
+		]
+		`
 
-	// var repositoriesJson []Repository
+	var repositoriesJson []Repository
 
-	// final := make(map[string]int)
-
-	// if err := json.Unmarshal([]byte(jsonRepos), &repositoriesJson); err != nil {
-	// 	fmt.Println("Erro ao decodificar o JSON:", err)
-	// 	return
-	// }
-
-	// for _, repo := range repositoriesJson {
-	// 	for lang, count := range repo.Languages {
-	// 		if val, ok := final[lang]; ok {
-	// 			final[lang] = val + count
-	// 		} else {
-	// 			final[lang] = count
-	// 		}
-	// 	}
-	// }
-
-	// for lang, count := range final {
-	// 	fmt.Println(lang, count)
-	// }
-
-	//real code
-
-	body, err := getURL("https://api.github.com/users/nellfs/repos")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var repositories []Repository
-
-	err = json.Unmarshal(body, &repositories)
-	if err != nil {
-		fmt.Println("Error decoding response:", err)
+	if err := json.Unmarshal([]byte(jsonRepos), &repositoriesJson); err != nil {
+		fmt.Println("Erro ao decodificar o JSON:", err)
 		return
 	}
 
-	langMap := make(map[string]int)
-
-	for _, repo := range repositories {
-		languagesURL := repo.Languages
-		languagesBody, err := getURL(languagesURL)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var languages map[string]int
-		err = json.Unmarshal(languagesBody, &languages)
-		if err != nil {
-			log.Fatal("Error decoding languages:", err)
-		}
-
-		for lang, score := range languages {
-			//logic to register a new language
-
-			if val, ok := langMap[lang]; ok {
-				langMap[lang] = val + score
-			} else {
-				langMap[lang] = score
-			}
-		}
-
+	for _, repo := range repositoriesJson {
+		fmt.Println(repo, newRequestID)
 	}
 
-	total := 0
-	for _, score := range langMap {
-		total += score
-	}
-
-	percentages := make(map[string]float64)
-	for name, value := range langMap {
-		percentage := float64(value) / float64(total) * 100
-		roundedPercentage := fmt.Sprintf("%.2f", percentage)
-		roundedFinal, err := strconv.ParseFloat(roundedPercentage, 64)
-		if err != nil {
-			fmt.Println(err)
-		}
-		percentages[name] = roundedFinal
-	}
-
-	ordered := orderByValue(percentages)
-
-	for _, kv := range ordered {
-		languageId, err := store.getLanguageId(kv.Language)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if languageId == 0 {
-			store.CreateLanguage(&Language{kv.Language, kv.Percentage})
-		}
-
-		store.updateLanguageUsage(kv.Language, kv.Percentage)
-
-		err = store.CreateCodeReport(&CodeReport{newRequestID, languageId, langMap[kv.Language], kv.Percentage, time.Now()})
-
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	store.db.Close()
-
-	// err = store.CreateCodeReport(&CodeReport{0, 0, 0, 0.0, time.Now()})
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
 }
+
+// func main() {
+
+// 	store, err := NewPostgresStore()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	if err := store.Init(); err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	lastRequest, err := store.getLastRequest()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	newRequestID := lastRequest + 1
+
+// 	// jsonRepos := `[
+// 	// 	{
+// 	// 	"name": "hello",
+// 	// 	"languages_url": {
+// 	// 		"Go": 10,
+// 	// 		"Javascript": 20,
+// 	// 		"Python": 4
+// 	// 		}
+// 	// 	},
+// 	// 	{
+// 	// 	"name": "world",
+// 	// 	"languages_url": {
+// 	// 		"Go": 15,
+// 	// 		"Typescript": 10,
+// 	// 		"Javascript": 3
+// 	// 		}
+// 	// 	}
+// 	// 	]
+// 	// 	`
+
+// 	// var repositoriesJson []Repository
+
+// 	// final := make(map[string]int)
+
+// 	// if err := json.Unmarshal([]byte(jsonRepos), &repositoriesJson); err != nil {
+// 	// 	fmt.Println("Erro ao decodificar o JSON:", err)
+// 	// 	return
+// 	// }
+
+// 	// for _, repo := range repositoriesJson {
+// 	// 	for lang, count := range repo.Languages {
+// 	// 		if val, ok := final[lang]; ok {
+// 	// 			final[lang] = val + count
+// 	// 		} else {
+// 	// 			final[lang] = count
+// 	// 		}
+// 	// 	}
+// 	// }
+
+// 	// for lang, count := range final {
+// 	// 	fmt.Println(lang, count)
+// 	// }
+
+// 	//real code
+
+// 	// body, err := getURL("https://api.github.com/users/nellfs/repos")
+// 	// if err != nil {
+// 	// 	log.Fatal(err)
+// 	// }
+
+// 	body := `[
+// 		{
+// 		"name": "hello",
+// 		"languages_url": {
+// 			"Go": 10,
+// 			"Javascript": 20,
+// 			"Python": 4
+// 			}
+// 		},
+// 		{
+// 		"name": "world",
+// 		"languages_url": {
+// 			"Go": 15,
+// 			"Typescript": 10,
+// 			"Javascript": 3
+// 			}
+// 		}
+// 		]
+// 		`
+
+// 	var repositories []Repository
+
+// 	err = json.Unmarshal([]byte(body), &repositories)
+// 	if err != nil {
+// 		fmt.Println("Error decoding response:", err)
+// 		return
+// 	}
+
+// 	langMap := make(map[string]int)
+
+// 	for _, repo := range repositories {
+// 		fmt.Println(repo)
+// 		// languagesURL := repo.Languages
+// 		// languagesBody, err := getURL(languagesURL)
+// 		// if err != nil {
+// 		// 	log.Fatal(err)
+// 		// }
+
+// 		var languages map[string]int
+// 		// err = json.Unmarshal(languagesBody, &languages)
+// 		// if err != nil {
+// 		// 	log.Fatal("Error decoding languages:", err)
+// 		// }
+
+// 		for lang, score := range languages {
+// 			//logic to register a new language
+// 			if val, ok := langMap[lang]; ok {
+// 				langMap[lang] = val + score
+// 			} else {
+// 				langMap[lang] = score
+// 			}
+// 		}
+
+// 	}
+
+// 	total := 0
+// 	for _, score := range langMap {
+// 		total += score
+// 	}
+
+// 	percentages := make(map[string]float64)
+// 	for name, value := range langMap {
+// 		percentage := float64(value) / float64(total) * 100
+// 		roundedPercentage := fmt.Sprintf("%.2f", percentage)
+// 		roundedFinal, err := strconv.ParseFloat(roundedPercentage, 64)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 		}
+// 		percentages[name] = roundedFinal
+// 	}
+
+// 	ordered := orderByValue(percentages)
+
+// 	for _, kv := range ordered {
+// 		languageId, err := store.getLanguageId(kv.Language)
+// 		if err != nil {
+// 			log.Fatal(err)
+// 		}
+
+// 		if languageId == 0 {
+// 			// store.CreateLanguage(&Language{kv.Language, kv.Percentage})
+// 		} else {
+// 			store.UpdateLanguageUsage(&Language{kv.Language, kv.Percentage})
+// 		}
+
+// 		err = store.CreateCodeReport(&CodeReport{newRequestID, languageId, langMap[kv.Language], kv.Percentage, time.Now()})
+
+// 		if err != nil {
+// 			log.Fatal(err)
+// 		}
+// 	}
+
+// 	store.db.Close()
+
+// 	// err = store.CreateCodeReport(&CodeReport{0, 0, 0, 0.0, time.Now()})
+
+// 	// if err != nil {
+// 	// 	log.Fatal(err)
+// 	// }
+// }
 
 func getURL(url string) ([]byte, error) {
 	resp, err := http.Get(url)
