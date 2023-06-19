@@ -124,7 +124,7 @@ func (s *PostgresStore) UpdateLanguageUsage(l *Language) error {
 	defer stmt.Close()
 
 	// Execute the update statement
-	_, err = stmt.Exec(l.Name, l.Usage)
+	_, err = stmt.Exec(l.Usage, l.Name)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -142,10 +142,9 @@ func (s *PostgresStore) UpdateLanguageUsage(l *Language) error {
 
 func (s *PostgresStore) getLastRequest() (int, error) {
 	var lastGroupID int
-	err := s.db.QueryRow("SELECT MAX(request) FROM code_report").Scan(&lastGroupID)
+	err := s.db.QueryRow("SELECT COALESCE(MAX(request), 0) FROM code_report").Scan(&lastGroupID)
 	if err != nil {
 		lastGroupID = -1
-	} else {
 		return 0, err
 	}
 	return lastGroupID, nil
