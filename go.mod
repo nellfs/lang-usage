@@ -1,4 +1,4 @@
-module github.com/nellfs/simple-chat-websocket
+module github.com/nellfs/lang-usage
 
 go 1.20
 
