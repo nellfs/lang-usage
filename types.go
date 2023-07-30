@@ -1,6 +1,8 @@
 package main
 
-import "time"
+import (
+	"time"
+)
 
 type Language struct {
 	Name  string
@@ -14,3 +16,4 @@ type CodeReport struct {
 	Use_Percentage float64
 	Created_At     time.Time
 }
+
