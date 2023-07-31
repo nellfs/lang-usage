@@ -130,8 +130,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-
-  server := server.NewAPIServer("nellfs", "8080", test) 
+  server := server.NewAPIServer("nellfs", "8080", store) 
+  server.Run()
 
 	// lastRequest, err := database.GetLastRequest()
 	// if err != nil {
