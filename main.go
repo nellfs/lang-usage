@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sort"
 
+	server "github.com/nellfs/lang-usage/api"
 	"github.com/nellfs/lang-usage/storage"
 )
 
@@ -128,6 +129,9 @@ func main() {
 	if err := store.Init(); err != nil {
 		log.Fatal(err)
 	}
+
+
+  server := server.NewAPIServer("nellfs", "8080", test) 
 
 	// lastRequest, err := database.GetLastRequest()
 	// if err != nil {

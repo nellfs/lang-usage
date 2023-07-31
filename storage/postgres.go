@@ -100,11 +100,11 @@ func (ps *PostgresStorage) CreateCodeReport(cr *types.CodeReport) error {
 	return nil
 }
 
-func (ps *PostgresStorage) GetCodeReport(int) (*types.CodeReport, error) {
+func (ps *PostgresStorage) GetCodeReport(number int) (*types.CodeReport, error) {
 	return nil, nil
 }
 
-func (ps *PostgresStorage) GetLastRequest() (int, error) {
+func (ps *PostgresStorage) GetLastRequestID() (int, error) {
 	var lastGroupID int
 	err := ps.DB.QueryRow("SELECT COALESCE(MAX(request), 0) FROM code_report").Scan(&lastGroupID)
 	if err != nil {
