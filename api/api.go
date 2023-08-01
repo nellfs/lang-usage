@@ -70,7 +70,9 @@ func (s *APIServer) handleData(w http.ResponseWriter, r *http.Request) error {
 }
 
 //return all languages data by default
-func (s *APIServer) handleGetLanguage(w http)
+func (s *APIServer) handleGetLanguage(w http.ResponseWriter, r *http.Request) error {
+  return nil // todo
+}
 
 func (s *APIServer) handleGetCodeReport(w http.ResponseWriter, r *http.Request)  error {
   return nil  
