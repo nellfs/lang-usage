@@ -123,14 +123,14 @@ type LanguagePercentage struct {
 func main() {
 	store, err := storage.NewPostgresStorage()
   if err != nil {
-		log.Fatal(err)
+    log.Fatal("Error creating storage: ",err)
 	}
 
 	if err := store.Init(); err != nil {
 		log.Fatal(err)
 	}
 
-  server := server.NewAPIServer("nellfs", "8080", store) 
+  server := server.NewAPIServer("nellfs", ":8080", store) 
   server.Run()
 
 	// lastRequest, err := database.GetLastRequest()

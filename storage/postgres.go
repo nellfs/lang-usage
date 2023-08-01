@@ -44,16 +44,16 @@ func NewPostgresStorage() (*PostgresStorage, error) {
 
 func (ps *PostgresStorage) Init() error {
 	query := `
-	CREATE TABLE IF NOT EXISTS language (
+	CREATE TABLE IF NOT EXISTS languages (
 		id SERIAL PRIMARY KEY,
 		name VARCHAR(50) UNIQUE,
 		usage NUMERIC(5, 2)
 	  );
 
-	  CREATE TABLE IF NOT EXISTS code_report (
+	  CREATE TABLE IF NOT EXISTS code_reports (
 		id SERIAL PRIMARY KEY,
 		request INTEGER,
-		language_id INTEGER REFERENCES language(id),
+		language_id INTEGER REFERENCES languages(id),
 		score INTEGER,
 		usage NUMERIC(5, 2),
 		created_at TIMESTAMPTZ DEFAULT NOW()
@@ -66,7 +66,7 @@ func (ps *PostgresStorage) Init() error {
 
 func (ps *PostgresStorage) CreateLanguage(l *types.Language) error {
 	query := `
-	INSERT INTO language (name)
+	INSERT INTO languages (name)
 	VALUES ($1)`
 	_, err := ps.DB.Exec(query, l.Name)
 	if err != nil {
@@ -75,10 +75,20 @@ func (ps *PostgresStorage) CreateLanguage(l *types.Language) error {
 	return nil
 }
 
+//Return list with all languages
+func (ps *PostgresStorage) GetLanguage(language *string) ([]*type.Language, error) {
+  // rows, err := ps.DB.Query("select * from languages")
+  // if err != nil {
+  //   return nil, err
+  // }
+  // rows.Next()
+}
+
+
 func (ps *PostgresStorage) GetLanguageIDByName(name string) (int, error) {
 	var id int
 
-	err := ps.DB.QueryRow("SELECT id FROM language WHERE name = $1", name).Scan(&id)
+	err := ps.DB.QueryRow("SELECT id FROM languages WHERE name = $1", name).Scan(&id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
@@ -91,7 +101,7 @@ func (ps *PostgresStorage) GetLanguageIDByName(name string) (int, error) {
 
 func (ps *PostgresStorage) CreateCodeReport(cr *types.CodeReport) error {
 	query := `
-	INSERT INTO code_report (request, language_id, score, usage, created_at)
+	INSERT INTO code_reports (request, language_id, score, usage, created_at)
 	VALUES ($1, $2, $3, $4, $5)`
 	_, err := ps.DB.Exec(query, cr.Request_ID, cr.Language_ID, cr.Score, cr.Use_Percentage, cr.Created_At)
 	if err != nil {
@@ -106,7 +116,7 @@ func (ps *PostgresStorage) GetCodeReport(number int) (*types.CodeReport, error) 
 
 func (ps *PostgresStorage) GetLastRequestID() (int, error) {
 	var lastGroupID int
-	err := ps.DB.QueryRow("SELECT COALESCE(MAX(request), 0) FROM code_report").Scan(&lastGroupID)
+	err := ps.DB.QueryRow("SELECT COALESCE(MAX(request), 0) FROM code_reports").Scan(&lastGroupID)
 	if err != nil {
 		lastGroupID = -1
 		return 0, err

@@ -6,13 +6,33 @@ import (
 	"net/http"
 
 	"github.com/nellfs/lang-usage/storage"
-	"github.com/nellfs/lang-usage/types"
 )
 
 type APIServer struct {
 	user       string
 	listenAddr string
 	storage    storage.Storage
+}
+
+func WriteJSONResponse(w http.ResponseWriter, statusCode int, v any) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	return json.NewEncoder(w).Encode(v)
+}
+
+type apiFunc func(http.ResponseWriter, *http.Request) error
+
+type ApiError struct {
+	Error string
+}
+
+func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := f(w, r); err != nil {
+			WriteJSONResponse(w, http.StatusBadRequest, ApiError{Error: err.Error()})
+		}
+	}
 }
 
 func NewAPIServer(user string, listenAddr string, storage storage.Storage) *APIServer {
@@ -24,10 +44,10 @@ func NewAPIServer(user string, listenAddr string, storage storage.Storage) *APIS
 }
 
 func (s *APIServer) Run() {
-	http.HandleFunc("/", apiHandler)
+	http.HandleFunc("/", makeHTTPHandleFunc(s.handleData)) // convert to makehttphandlerfunc
 
-	fmt.Println("Server is running on http://localhost:8080")
-	err := http.ListenAndServe(":8080", nil)
+	fmt.Printf("Server is running on http://localhost%s", s.listenAddr)
+	err := http.ListenAndServe(s.listenAddr, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -37,21 +57,21 @@ type Response struct {
 	Message string `json:"message"`
 }
 
-func apiHandler(w http.ResponseWriter, r *http.Request) {
-	// Set the response content type to JSON
-	w.Header().Set("Content-Type", "application/json")
+func (s *APIServer) handleData(w http.ResponseWriter, r *http.Request) error {
+	if r.Method == http.MethodGet {
+		// test := "GET Request"
+		//   WriteJSONResponse(w, http.StatusOK, test)
+		//   return nil
 
-	// Create a response message
-	response := Response{Message: "Hello, this is a simple API!"}
-
-	// Encode the response as JSON and send it
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
+    return s.handleGetCodeReport(w, r)
 	}
+
+	return fmt.Errorf("Method not allowed: %s", r.Method)
 }
 
-func (s *APIServer) handleGetCodeReport(w http.ResponseWriter, r *http.Request) (*types.CodeReport, error) {
-	return nil, nil
+//return all languages data by default
+func (s *APIServer) handleGetLanguage(w http)
+
+func (s *APIServer) handleGetCodeReport(w http.ResponseWriter, r *http.Request)  error {
+  return nil  
 }
