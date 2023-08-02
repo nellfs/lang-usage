@@ -59,11 +59,7 @@ type Response struct {
 
 func (s *APIServer) handleData(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == http.MethodGet {
-		// test := "GET Request"
-		//   WriteJSONResponse(w, http.StatusOK, test)
-		//   return nil
-
-    return s.handleGetCodeReport(w, r)
+    return s.handleGetLanguage(w, r)
 	}
 
 	return fmt.Errorf("Method not allowed: %s", r.Method)
@@ -71,7 +67,13 @@ func (s *APIServer) handleData(w http.ResponseWriter, r *http.Request) error {
 
 //return all languages data by default
 func (s *APIServer) handleGetLanguage(w http.ResponseWriter, r *http.Request) error {
-  return nil // todo
+  language := "PotrickLanguage"
+  languages, err := s.storage.GetLanguages(&language)
+  if err != nil {
+    return err
+  }
+
+  return WriteJSONResponse(w, http.StatusOK, languages)
 }
 
 func (s *APIServer) handleGetCodeReport(w http.ResponseWriter, r *http.Request)  error {

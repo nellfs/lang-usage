@@ -3,8 +3,9 @@ package types
 import "time"
 
 type Language struct {
-	Name  string
-	Usage float64
+  ID int `json:id`
+  Name  string `json:"name"` 
+  Usage float64 `json:"usage"`
 }
 
 type CodeReport struct {
@@ -14,3 +15,5 @@ type CodeReport struct {
 	Use_Percentage float64
 	Created_At     time.Time
 }
+
+

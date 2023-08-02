@@ -1,4 +1,4 @@
-package storage;
+package storage
 
 import (
 	"database/sql"
@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/nellfs/lang-usage/types"
-  	_ "github.com/lib/pq"
 )
 
 type PostgresStorage struct {
@@ -75,15 +75,41 @@ func (ps *PostgresStorage) CreateLanguage(l *types.Language) error {
 	return nil
 }
 
-//Return list with all languages
-func (ps *PostgresStorage) GetLanguage(language *string) ([]*type.Language, error) {
-  // rows, err := ps.DB.Query("select * from languages")
-  // if err != nil {
-  //   return nil, err
-  // }
-  // rows.Next()
-}
+// Return list with all languages
+func (ps *PostgresStorage) GetLanguages(language *string) ([]*types.Language, error) {
+	if language != nil {
+		err := ps.DB.QueryRow("SELECT * FROM languages WHERE name = $1", language).Scan(&language)
+    fmt.Println(&language)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				log.Printf("no user with name %d\n", language)
+				return nil, err
+			}
+			return nil, err
+		}
+	return []*language, nil
+    //fix
+	}
 
+	rows, err := ps.DB.Query("SELECT * FROM languages")
+	if err != nil {
+		return nil, err
+	}
+	languages := []*types.Language{}
+	for rows.Next() {
+		language := new(types.Language)
+		err := rows.Scan(
+			&language.ID,
+			&language.Name,
+			&language.Usage,
+		)
+		if err != nil {
+			return nil, err
+		}
+		languages = append(languages, language)
+	}
+	return languages, nil
+}
 
 func (ps *PostgresStorage) GetLanguageIDByName(name string) (int, error) {
 	var id int
